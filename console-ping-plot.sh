@@ -189,12 +189,28 @@ fi
 # setup temporary data files
 sDATAFILE_PING_TIME="$(mktemp -q --tmpdir "$(basename "$0" .sh)".$$.tmp.XXXXXXXXXX)"
 sDATAFILE_AVG_PING_TIME="$(mktemp -q --tmpdir "$(basename "$0" .sh)".$$.tmp.XXXXXXXXXX)"
-
+echo "hello"
 # All hope abandon, ye who enter here!
 while :; do
     # If not in debug mode
     if [ "$iDEBUG" -eq 0 ]; then
-        sPING_TIME=$(ping -nc1 "$sHOST" | awk 'NR==2 {print substr($7,6)}')
+        #shellcheck disable=SC2034
+        while IFS=' ' read -r -- f0 f1 f2 f3 f4 f5 f6 f7 f8; do
+            case $f6 in
+                (*'='*)
+                    # time=100
+                    if [ "${f6%=*}" = 'time' ]; then
+                        sPING_TIME=${f6#*=}
+                        break 1
+                    else
+                        sPING_TIME=''
+                    fi
+                ;;
+            esac
+        done <<EOC
+$(ping -nc1 "$sHOST")
+EOC
+        #sPING_TIME=$(ping -nc1 "$sHOST" | awk 'NR==2 {print substr($7,6)}')
     elif [ "$iDEBUG" -eq 1 ]; then
         # Used for quickly testing "random" input values
         while [ "$sPING_TIME" = "$sPING_TIME_LAST" ]; do
