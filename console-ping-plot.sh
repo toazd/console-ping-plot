@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # Known bugs:
 # BUG CONTROL-C escaping at just the right moment (while in a subshell in the main loop) can cause an error in some tests
 # BUG Using CONTROL+C escaping this way masks the real return value of any previous command
