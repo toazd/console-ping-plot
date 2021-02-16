@@ -38,7 +38,7 @@ jitter_abs_delta=0
 jitter_abs_delta_sum=0
 data_line=''
 data_lines_count=0
-debug_mode=1
+debug_mode=0
 debug_random_ping_max=150
 debug_command_generation='s'
 
@@ -171,7 +171,7 @@ fi
 while IFS= read -r result
 do
     case $result in
-        *'not found'*)
+        (*'not found'*)
             missing=${result%: *}
             missing=${missing##*: }
             echo "$missing is a required command"
@@ -212,10 +212,9 @@ do
         done <<EOC
 $(ping -nc1 "$hostname" 2>/dev/null)
 EOC
-        #latest_ping_time=$(ping -nc1 "$hostname" | awk 'NR==2 {print substr($7,6)}')
     elif [ "$debug_mode" -eq 1 ]
     then
-        # Used for quickly testing "random" input values
+        # Used for quickly testing "random" input values using Awk or shuf
         while [ "$latest_ping_time" = "$ping_time_last" ]
         do
             if [ "$debug_command_generation" = 'a' ]
