@@ -284,7 +284,7 @@ EOC
     # number of consecutive NULL|zero responses from ping which will cause the script to abort
     # NOTE interspersed successful pings > @(NULL|0) will reduce the count so a bad connection can still be plotted
     # NOTE null_response_max might need tweaking
-    if [ "$(printf '%s\n' "$latest_ping_time > 0" | bc -l)" -eq 1 ]
+    if [ "$(printf '%s\n' "$latest_ping_time > 0" | bc)" -eq 1 ]
     then
         [ "$null_response_count" -gt 0 ] && null_response_count=$((null_response_count-1))
     else
@@ -358,15 +358,15 @@ EOC
     fi
 
     # If the current ping time is greater than the current ping time max it becomes the latest maximum
-    [ "$(printf '%s\n' "$latest_ping_time > $ping_time_max" | bc -l)" -eq 1 ] && ping_time_max=$latest_ping_time
+    [ "$(printf '%s\n' "$latest_ping_time > $ping_time_max" | bc)" -eq 1 ] && ping_time_max=$latest_ping_time
 
     # If the current ping time is less than the current ping min it becomes the latest minimum
-    [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc -l)" -eq 1 ] && ping_time_min=$latest_ping_time
+    [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
     # Adjust the yrange based on the max and min centered around the avg
     # For whatever reason, gnuplot has trouble autosizing to include all plot values
     # and centering the graph at the average plot even when using a graph offset
-    if [ "$(printf '%s\n' "$ping_time_average > 0" | bc -l)" -eq 1  ]
+    if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]
     then
         plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
         plot_y_min=$(printf '%s\n' "scale=4; ($ping_time_min - ($ping_time_average / 10))" | bc -l)
@@ -382,10 +382,10 @@ EOC
     # Unfortunately, multi-colored text on a single label is not supported by gnuplot
     # so it's either this way or add more labels
     # Latest ping time
-    if [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_good" | bc -l)" -eq 1 ]
+    if [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_current_color="red"
-    elif [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_warn && $latest_ping_time < $ping_max_good" | bc -l)" -eq 1 ]
+    elif [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_warn && $latest_ping_time < $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_current_color="yellow"
     else
@@ -393,10 +393,10 @@ EOC
     fi
 
     # Latest ping time minimum
-    if [ "$(printf '%s\n' "$ping_time_min >= $ping_max_good" | bc -l)" -eq 1 ]
+    if [ "$(printf '%s\n' "$ping_time_min >= $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_min_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_min >= $ping_max_warn && $ping_time_min < $ping_max_good" | bc -l)" -eq 1 ]
+    elif [ "$(printf '%s\n' "$ping_time_min >= $ping_max_warn && $ping_time_min < $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_min_color="yellow"
     else
@@ -404,10 +404,10 @@ EOC
     fi
 
     # Latest ping time maximum
-    if [ "$(printf '%s\n' "$ping_time_max >= $ping_max_good" | bc -l)" -eq 1 ]
+    if [ "$(printf '%s\n' "$ping_time_max >= $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_max_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_max >= $ping_max_warn && $ping_time_max < $ping_max_good" | bc -l)" -eq 1 ]
+    elif [ "$(printf '%s\n' "$ping_time_max >= $ping_max_warn && $ping_time_max < $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_max_color="yellow"
     else
@@ -415,10 +415,10 @@ EOC
     fi
 
     # Latest ping time average
-    if [ "$(printf '%s\n' "$ping_time_average >= $ping_max_good" | bc -l)" -eq 1 ]
+    if [ "$(printf '%s\n' "$ping_time_average >= $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_avg_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_average >= $ping_max_warn && $ping_time_average < $ping_max_good" | bc -l)" -eq 1 ]
+    elif [ "$(printf '%s\n' "$ping_time_average >= $ping_max_warn && $ping_time_average < $ping_max_good" | bc)" -eq 1 ]
     then
         label_ping_avg_color="yellow"
     else
@@ -436,7 +436,7 @@ EOC
 
     # avoid errors with gnuplot when there is no y-axis coordinate to plot
     # TODO test if this is even needed anymore
-    [ "$(printf '%s\n' "$plot_y_min >= $plot_y_max" | bc -l)" -eq 1 ] && continue
+    [ "$(printf '%s\n' "$plot_y_min >= $plot_y_max" | bc)" -eq 1 ] && continue
 
     # DEBUG labels
     #set label \"DEBUG - DeltaSum: $jitter_abs_delta_sum JitDeltaCnt: $jitter_delta_count JitCnt: $jitter_count SmpA: $jitter_sample_a SmpB: $jitter_sample_b AbsDelta: $jitter_abs_delta\" at graph 0.5,0.05 center front nopoint textcolor \"red\"; \
@@ -451,7 +451,7 @@ EOC
                 set xlabel \"$label_samples\" norotate offset character 0,0 textcolor \"$label_xlabel_samples_color\"; \
                 set ylabel \"Time\n(ms)\" norotate offset character 4,2 textcolor \"$label_ylabel_time_color\"; \
 
-                set bmargin 3; set tmargin 3; set rmargin 2; \
+                set bmargin 3; set tmargin 3; set rmargin 1; \
                 set border front linestyle 1 linecolor \"${border_color}\"; \
 
                 set xtics mirror border in autojustify scale default textcolor \"$xtics_color\"; \
