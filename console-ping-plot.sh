@@ -430,7 +430,7 @@ EOC
     label_ping_avg=" Average: $(printf '%1.3g' "$ping_time_average") "
     label_ping_current=" Current: $(printf '%1.3g' "$latest_ping_time") "
     label_jitter=" Jitter: $(printf '%1.3g' "$jitter_current") "
-    label_samples="${data_lines_count}/${plot_history_max} samples ($(printf '%s\n' "scale=0; (${plot_history_max}/(1/${update_interval}))" | bc -l)s), ${update_interval}s interval, ${null_response_count}/${null_response_max} failures"
+    label_samples="${data_lines_count}/${plot_history_max} samples, ${update_interval}s interval, ${null_response_count}/${null_response_max} failures"
 
     # avoid errors with gnuplot when there is no y-axis coordinate to plot
     # TODO test if this is even needed anymore
