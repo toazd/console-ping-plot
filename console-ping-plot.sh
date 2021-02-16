@@ -4,6 +4,7 @@ target_host=""
 file_ping_time=""
 file_avg_ping_time=""
 terminal_type='ansirgb'
+# Default colorscheme is suitable for dark background/dark theme
 label_host_color='royalblue'
 label_xlabel_samples_color='dark-cyan'
 label_ylabel_time_color='dark-cyan'
@@ -52,7 +53,8 @@ ExitTrap() {
         then
             [ -f "$file_ping_time" ] && mv "$file_ping_time" "ping_${target_host}_$(date).log"
             [ -f "$file_avg_ping_time" ] && mv "$file_avg_ping_time" "avg_${target_host}_$(date).log"
-        else
+        elif [ "$save_logs" -eq 0 ]
+        then
             [ -f "$file_ping_time" ] && rm -f "$file_ping_time"
             [ -f "$file_avg_ping_time" ] && rm -f "$file_avg_ping_time"
         fi
@@ -197,8 +199,8 @@ $(command -V gnuplot ping bc mktemp 2>&1)
 EOC
 
 # setup temporary files to hold ping results
-file_ping_time=$(mktemp -q --tmpdir "${0##*/}".$$.tmp.XXXXXXXXXX)
-file_avg_ping_time=$(mktemp -q --tmpdir "${0##*/}".$$.tmp.XXXXXXXXXX)
+file_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
+file_avg_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
 
 # All hope abandon, ye who enter here!
 while :
@@ -349,7 +351,7 @@ EOC
 
         if [ "$jitter_delta_count" -ge 1 ]
         then
-        jitter_current=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
+            jitter_current=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
         fi
 
         # DEBUG
@@ -370,9 +372,7 @@ EOC
     # If the current ping time is less than the current ping min it becomes the latest minimum
     [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
-    # Adjust the yrange based on the max and min centered around the avg
-    # For whatever reason, gnuplot has trouble autosizing to include all plot values
-    # and centering the graph at the average plot even when using a graph offset
+    # Adjust the yrange using the max and min, centered around the avg
     if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]
     then
         plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
@@ -386,8 +386,6 @@ EOC
     console_width=${console_dimensions#* }
 
     # Color the ping stats labels text based on quality thresholds set above
-    # Unfortunately, multi-colored text on a single label is not supported by gnuplot
-    # so it's either this way or add more labels
     # Latest ping time
     if [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_good" | bc)" -eq 1 ]
     then
