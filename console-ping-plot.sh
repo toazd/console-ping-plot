@@ -182,8 +182,6 @@ done <<EOC
 $(command -V gnuplot ping bc 2>&1)
 EOC
 
-exit
-
 # setup temporary data files
 file_ping_time=$(mktemp -q --tmpdir "$(basename "$0" .sh)".$$.tmp.XXXXXXXXXX)
 file_avg_ping_time=$(mktemp -q --tmpdir "$(basename "$0" .sh)".$$.tmp.XXXXXXXXXX)
