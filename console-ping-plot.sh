@@ -38,7 +38,7 @@ jitter_abs_delta=0
 jitter_abs_delta_sum=0
 data_line=''
 data_lines_count=0
-debug_mode=0
+debug_mode=1
 debug_random_ping_max=150
 debug_command_generation='s'
 
@@ -167,43 +167,22 @@ then
     BeHelpful
 fi
 
-# required debug commands
-if [ "$debug_command_generation" = 's' ] && [ "$debug_mode" -eq 1 ];
-then
-    if ! command -v shuf >/dev/null
-    then
-        echo "shuf not found"
-        exit 1
-    fi
-fi
-
-if [ "$debug_command_generation" = 'a' ] && [ "$debug_mode" -eq 1 ]
-then
-    if ! command -v awk >/dev/null
-    then
-        echo "awk not found"
-        exit 1
-    fi
-fi
-
 # required commands
-if ! command -v gnuplot >/dev/null
-then
-    echo "gnuplot is a required command"
-    exit 1
-fi
+while IFS= read -r result
+do
+    case $result in
+        *'not found'*)
+            missing=${result%: *}
+            missing=${missing##*: }
+            echo "$missing is a required command"
+            exit 1
+        ;;
+    esac
+done <<EOC
+$(command -V gnuplot ping bc 2>&1)
+EOC
 
-if ! command -v ping >/dev/null
-then
-    echo "ping is a required command"
-    exit 1
-fi
-
-if ! command -v shuf >/dev/null
-then
-    echo "bc is a required command"
-    exit 1
-fi
+exit
 
 # setup temporary data files
 file_ping_time=$(mktemp -q --tmpdir "$(basename "$0" .sh)".$$.tmp.XXXXXXXXXX)
