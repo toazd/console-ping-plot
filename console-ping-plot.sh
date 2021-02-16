@@ -35,6 +35,7 @@ jitter_abs_delta_sum=0
 data_line=""
 data_lines_count=0
 debug_mode=0
+save_logs=0
 debug_random_ping_max=150
 debug_command_generation='s' # a=Awk, s=shuf
 
@@ -47,8 +48,14 @@ TrapCNTRLC() {
 ExitTrap() {
     if [ "$debug_mode" -eq 0 ]
     then
-        [ -f "$file_ping_time" ] && mv "$file_ping_time" "ping_${target_host}_$(date).log" # rm -f "$file_ping_time"
-        [ -f "$file_avg_ping_time" ] && mv "$file_avg_ping_time" "avg_${target_host}_$(date).log" # rm -f "$file_avg_ping_time"
+        if [ "$save_logs" -eq 1 ]
+        then
+            [ -f "$file_ping_time" ] && mv "$file_ping_time" "ping_${target_host}_$(date).log"
+            [ -f "$file_avg_ping_time" ] && mv "$file_avg_ping_time" "avg_${target_host}_$(date).log"
+        else
+            [ -f "$file_ping_time" ] && rm -f "$file_ping_time"
+            [ -f "$file_avg_ping_time" ] && rm -f "$file_avg_ping_time"
+        fi
     elif [ "$debug_mode" -eq 1 ]
     then
         [ -f "$file_ping_time" ] && rm -vfi "$file_ping_time"
@@ -170,7 +177,7 @@ done
 # required parameters
 if [ -z "$target_host" ] && [ "$debug_mode" -eq 0 ]
 then
-    printf '%s\n' "${0##*/} -H is a required parameter"
+    printf '%s\n' "${0##*/}: -H is a required parameter"
     ShowHelp
 fi
 
@@ -210,7 +217,7 @@ do
                         latest_ping_time=${f6#*=}
                         break 1
                     else
-                    # If columns are not how we expect, search every other columns (needs verification implemented)
+                    # If columns are not how we expect, search every other column just in case (needs verification implemented)
                         if [ "${f5%=*}" = 'time' ]
                         then
                             latest_ping_time=${f5#*=}
@@ -272,7 +279,7 @@ EOC
     fi
 
     # avoid writing null to the data file
-    if [ "$latest_ping_time" ]
+    if [ -n "$latest_ping_time" ]
     then
         # write the current ping time to a temporary data file
         printf '%s\n' "${latest_ping_time}" >> "${file_ping_time}"
@@ -342,11 +349,11 @@ EOC
 
         if [ "$jitter_delta_count" -ge 1 ]
         then
-            iJITTER=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
+        jitter_current=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
         fi
 
         # DEBUG
-        #[ "$jitter_delta_count" -ge 1 ] && printf '%s\n' "$iJITTER" >> jitter.out
+        #[ "$jitter_delta_count" -ge 1 ] && printf '%s\n' "$jitter_current" >> jitter.out
     fi
 
     # max history reached, clear data files and start over
@@ -431,7 +438,7 @@ EOC
     label_ping_max=" Maximum: $(printf '%1.3g' "$ping_time_max") "
     label_ping_avg=" Average: $(printf '%1.3g' "$ping_time_average") "
     label_ping_current=" Current: $(printf '%1.3g' "$latest_ping_time") "
-    label_jitter=" Jitter: $(printf '%1.3g' "$iJITTER") "
+    label_jitter=" Jitter: $(printf '%1.3g' "$jitter_current") "
     label_samples="${data_lines_count}/${plot_history_max} samples ($(printf '%s\n' "scale=0; (${plot_history_max}/(1/${update_interval}))" | bc -l)s), ${update_interval}s interval"
 
     # avoid errors with gnuplot when there is no y-axis coordinate to plot
