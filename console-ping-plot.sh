@@ -5,30 +5,28 @@ file_ping_time=""
 file_avg_ping_time=""
 terminal_type='ansirgb'
 # Default colorscheme is suitable for dark background/dark theme
-label_host_color='royalblue'
-label_xlabel_samples_color='dark-cyan'
-label_ylabel_time_color='dark-cyan'
-plot_sample_color='grey60'
-plot_average_color='dark-goldenrod'
+label_host_color='red'
+label_xlabel_samples_color='dark-salmon' #'dark-cyan'
+label_ylabel_time_color='dark-salmon' #'dark-cyan'
 label_jitter_color='orange'
-xtics_color='dark-goldenrod'
-ytics_color='dark-goldenrod'
-border_color='khaki'
+xtics_color='dark-khaki' #'dark-goldenrod'
+ytics_color='dark-khaki' #'dark-goldenrod'
+border_color='sienna1' #'khaki'
 point_type_average='μ'
+plot_average_color='royalblue' #'dark-goldenrod'
 point_type_samples='x'
+plot_sample_color='dark-gray' #'grey60'
 ping_time_min=999999999999
 ping_time_max=0
 null_response_max=10
 null_response_count=0
-update_interval=0.5
-plot_history_max=120
+update_interval=1
+plot_history_max=60
 ping_max_good=100
 ping_max_warn=70
 latest_ping_time=0
 ping_time_last=0
 ping_time_average=0
-plot_y_min=0
-plot_y_max=0
 jitter_count=0
 jitter_delta_count=0
 jitter_abs_delta=0
@@ -131,12 +129,7 @@ do
                 plot_history_max=$OPTARG
             fi
         ;;
-        ('u')
-            update_interval=$OPTARG
-            # always show at least one minutes worth of history
-            oneminute=$(printf '%s\n' "scale=0; 60/${update_interval}" | bc -l)
-            [ "$(printf '%s\n' "(${plot_history_max}*${update_interval}) < ${oneminute}" | bc)" -eq 1 ] && plot_history_max=$oneminute
-        ;;
+        ('u') update_interval=$OPTARG ;;
         ('m') terminal_type=$OPTARG ;;
         ('c') label_host_color=$OPTARG ;;
         ('j') label_jitter_color=$OPTARG ;;
@@ -373,11 +366,11 @@ EOC
     [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
     # Adjust the yrange using the max and min, centered around the avg
-    if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]
-    then
-        plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
-        plot_y_min=$(printf '%s\n' "scale=4; ($ping_time_min - ($ping_time_average / 10))" | bc -l)
-    fi
+    #if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]
+    #then
+    #    plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
+    #    plot_y_min=$(printf '%s\n' "scale=4; ($ping_time_min - ($ping_time_average / 10))" | bc -l)
+    #fi
 
     # Get the current screen character width and height for gnuplot
     # TODO: what if we have to guess (stty not available/fails)
@@ -437,21 +430,19 @@ EOC
     label_ping_avg=" Average: $(printf '%1.3g' "$ping_time_average") "
     label_ping_current=" Current: $(printf '%1.3g' "$latest_ping_time") "
     label_jitter=" Jitter: $(printf '%1.3g' "$jitter_current") "
-    label_samples="${data_lines_count}/${plot_history_max} samples ($(printf '%s\n' "scale=0; (${plot_history_max}/(1/${update_interval}))" | bc -l)s), ${update_interval}s interval"
+    label_samples="${data_lines_count}/${plot_history_max} samples ($(printf '%s\n' "scale=0; (${plot_history_max}/(1/${update_interval}))" | bc -l)s), ${update_interval}s interval, ${null_response_count}/${null_response_max} failures"
 
     # avoid errors with gnuplot when there is no y-axis coordinate to plot
     # TODO test if this is even needed anymore
-    [ "$(printf '%s\n' "$plot_y_min >= $plot_y_max" | bc)" -eq 1 ] && continue
+    #[ "$(printf '%s\n' "$plot_y_min >= $plot_y_max" | bc)" -eq 1 ] && continue
 
     # DEBUG labels
     #set label \"DEBUG - DeltaSum: $jitter_abs_delta_sum JitDeltaCnt: $jitter_delta_count JitCnt: $jitter_count SmpA: $jitter_sample_a SmpB: $jitter_sample_b AbsDelta: $jitter_abs_delta\" at graph 0.5,0.05 center front nopoint textcolor \"red\"; \
     # set label \"($plot_y_min $plot_y_max)\" at graph 0.5,0.3 center front nopoint textcolor \"red\"; \
-
-    gnuplot -e "set terminal dumb noenhanced $terminal_type size $console_width, $console_height; \
-                set encoding utf8; set key off; set autoscale x; \
+    #set yrange [$plot_y_min:$plot_y_max]; \
+    gnuplot -e "set terminal dumb enhanced $terminal_type size $console_width, $console_height; \
+                set encoding utf8; set key off; set autoscale x; set autoscale y; \
                 set x2label; set y2label; \
-
-                set yrange [$plot_y_min:$plot_y_max]; \
 
                 set xlabel \"$label_samples\" norotate offset character 0,0 textcolor \"$label_xlabel_samples_color\"; \
                 set ylabel \"Time\n(ms)\" norotate offset character 4,2 textcolor \"$label_ylabel_time_color\"; \
