@@ -3,7 +3,7 @@
 target_host=""
 file_ping_time=""
 file_avg_ping_time=""
-terminal_type='ansi'
+terminal_type='ansirgb'
 label_host_color='royalblue'
 label_xlabel_samples_color='dark-cyan'
 label_ylabel_time_color='dark-cyan'
@@ -20,7 +20,7 @@ ping_time_max=0
 null_response_max=10
 null_response_count=0
 update_interval=0.5
-plot_history_max=500
+plot_history_max=120
 ping_max_good=100
 ping_max_warn=70
 latest_ping_time=0
@@ -32,7 +32,7 @@ jitter_count=0
 jitter_delta_count=0
 jitter_abs_delta=0
 jitter_abs_delta_sum=0
-data_line=''
+data_line=""
 data_lines_count=0
 debug_mode=0
 debug_random_ping_max=150
@@ -47,8 +47,8 @@ TrapCNTRLC() {
 ExitTrap() {
     if [ "$debug_mode" -eq 0 ]
     then
-        [ -f "$file_ping_time" ] && rm -f "$file_ping_time"
-        [ -f "$file_avg_ping_time" ] && rm -f "$file_avg_ping_time"
+        [ -f "$file_ping_time" ] && mv "$file_ping_time" "ping_${target_host}_$(date).log" # rm -f "$file_ping_time"
+        [ -f "$file_avg_ping_time" ] && mv "$file_avg_ping_time" "avg_${target_host}_$(date).log" # rm -f "$file_avg_ping_time"
     elif [ "$debug_mode" -eq 1 ]
     then
         [ -f "$file_ping_time" ] && rm -vfi "$file_ping_time"
@@ -122,7 +122,12 @@ do
                 plot_history_max=$OPTARG
             fi
         ;;
-        ('u') update_interval=$OPTARG ;;
+        ('u')
+            update_interval=$OPTARG
+            # always show at least one minutes worth of history
+            oneminute=$(printf '%s\n' "scale=0; 60/${update_interval}" | bc -l)
+            [ "$(printf '%s\n' "(${plot_history_max}*${update_interval}) < ${oneminute}" | bc)" -eq 1 ] && plot_history_max=$oneminute
+        ;;
         ('m') terminal_type=$OPTARG ;;
         ('c') label_host_color=$OPTARG ;;
         ('j') label_jitter_color=$OPTARG ;;
@@ -239,7 +244,7 @@ do
                             latest_ping_time=${f0#*=}
                             break 1
                         else
-                            latest_ping_time=''
+                            latest_ping_time=""
                         fi
                         # digit check (checking the data type if latest_ping_time is not empty)
                     fi
@@ -347,8 +352,8 @@ EOC
     # max history reached, clear data files and start over
     if [ "$data_lines_count" -gt "$plot_history_max" ]
     then
-        printf '' > "$file_ping_time"
-        printf '' > "$file_avg_ping_time"
+        printf "" > "$file_ping_time"
+        printf "" > "$file_avg_ping_time"
         continue
     fi
 
@@ -427,7 +432,7 @@ EOC
     label_ping_avg=" Average: $(printf '%1.3g' "$ping_time_average") "
     label_ping_current=" Current: $(printf '%1.3g' "$latest_ping_time") "
     label_jitter=" Jitter: $(printf '%1.3g' "$iJITTER") "
-    label_samples="${data_lines_count}/${plot_history_max} samples, ${update_interval}s interval"
+    label_samples="${data_lines_count}/${plot_history_max} samples ($(printf '%s\n' "scale=0; (${plot_history_max}/(1/${update_interval}))" | bc -l)s), ${update_interval}s interval"
 
     # avoid errors with gnuplot when there is no y-axis coordinate to plot
     # TODO test if this is even needed anymore
@@ -444,9 +449,9 @@ EOC
                 set yrange [$plot_y_min:$plot_y_max]; \
 
                 set xlabel \"$label_samples\" norotate offset character 0,0 textcolor \"$label_xlabel_samples_color\"; \
-                set ylabel \"Time\n(ms)\" norotate offset character 4,3 textcolor \"$label_ylabel_time_color\"; \
+                set ylabel \"Time\n(ms)\" norotate offset character 4,2 textcolor \"$label_ylabel_time_color\"; \
 
-                set bmargin 3; set tmargin 1; set rmargin 1; \
+                set bmargin 3; set tmargin 3; set rmargin 2; \
                 set border front linestyle 1 linecolor \"${border_color}\"; \
 
                 set xtics mirror border in autojustify scale default textcolor \"$xtics_color\"; \
