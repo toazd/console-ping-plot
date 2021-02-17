@@ -1,5 +1,13 @@
 #!/usr/bin/env sh
-
+#
+# console-ping-plot.sh UNLICENSE Toazd <wmcdannell@hotmail.com Feb 2021
+#
+# Purpose:
+#   Plot both ping and average ping for a single host in a console-friendly
+#   format using Gnuplot.
+#
+#
+#
 # Plot colorscheme-related variables
 ###############################################################################
 # Refer to 'echo "show colornames" | gnuplot' for color
@@ -18,17 +26,20 @@ label_xlabel_samples_color='dark-salmon'
         point_type_samples='x'
          plot_sample_color='dark-gray'
 ###############################################################################
+null_response_max=25 # If null_response_count reaches this value the script will abort
+null_response_decay_factor=2 # How much null_response_count will be reduced by (after multiplying by 1) for each successfull ping that follows any ping failure
+update_interval=1 # Number of seconds between ping requests
+plot_history_max=60 # Maximum number of data points to show at a time
+ping_max_good=100 # Ping values above this value will be shown in red
+# Ping values between ping_max_good and ping_max_warn will be shown in yellow
+ping_max_warn=70 # Ping values below this value will be shown in green
+###############################################################################
+null_response_count=0
 target_host=""
 file_ping_time=""
 file_avg_ping_time=""
 ping_time_min=999999999999
 ping_time_max=0
-null_response_max=25
-null_response_count=0
-update_interval=1
-plot_history_max=60
-ping_max_good=100
-ping_max_warn=70
 latest_ping_time=0
 ping_time_last=0
 ping_time_average=0
@@ -263,7 +274,7 @@ EOC
     [ "$null_response_max" -ne 0 ] && {
         if [ "$(printf '%s\n' "$latest_ping_time > 0" | bc)" -eq 1 ]; then
             # Successfull pings will lower the abort counter
-            [ "$null_response_count" -gt 0 ] && null_response_count=$((null_response_count-1))
+            [ "$null_response_count" -gt 0 ] && null_response_count=$((null_response_count-(1*null_response_decay_factor)))
         else
             null_response_count=$((null_response_count+1))
             [ "$null_response_count" -ge "$null_response_max" ] && {
