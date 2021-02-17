@@ -11,5 +11,5 @@ Features
 - Provides visual plot of both data points and a rolling average  
 - Displays minimum, mean, maximum, and jitter for the current plot data set  
   - Minimum, mean, and maximum are color-coded based on configurable thresholds to visually indicate a values status (green, yellow, red)  
-- Tracks null/failed pings so that a bad connection can still be plotted (configurable)  
+- Tracks null/failed pings to abort without wasting resources but also so that a bad connection can still be plotted (configurable)  
 - All relevant calculations are done using bc and support displaying three decimal places (eg. 43.517)  
