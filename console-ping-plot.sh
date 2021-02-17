@@ -1,24 +1,29 @@
 #!/usr/bin/env sh
 
+# Colorscheme-related variables
+###############################################################################
+# Refer to 'echo "show colornames" | gnuplot' for color
+# names and codes supported by your version of Gnuplot.
+#
+             terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
+          label_host_color='red'
+label_xlabel_samples_color='dark-salmon'
+   label_ylabel_time_color='dark-salmon'
+        label_jitter_color='dark-spring-green'
+               xtics_color='dark-khaki'
+               ytics_color='dark-khaki'
+              border_color='sienna1'
+        point_type_average='μ' # Statistics average symbol
+        plot_average_color='royalblue'
+        point_type_samples='x'
+         plot_sample_color='dark-gray'
+###############################################################################
 target_host=""
 file_ping_time=""
 file_avg_ping_time=""
-terminal_type='ansirgb'
-# Default colorscheme is suitable for dark background/dark theme
-label_host_color='red'
-label_xlabel_samples_color='dark-salmon' #'dark-cyan'
-label_ylabel_time_color='dark-salmon' #'dark-cyan'
-label_jitter_color='orange'
-xtics_color='dark-khaki' #'dark-goldenrod'
-ytics_color='dark-khaki' #'dark-goldenrod'
-border_color='sienna1' #'khaki'
-point_type_average='μ'
-plot_average_color='royalblue' #'dark-goldenrod'
-point_type_samples='x'
-plot_sample_color='dark-gray' #'grey60'
 ping_time_min=999999999999
 ping_time_max=0
-null_response_max=10
+null_response_max=50
 null_response_count=0
 update_interval=1
 plot_history_max=60
@@ -40,26 +45,33 @@ debug_command_generation='s' # a=Awk, s=shuf
 
 TrapCNTRLC() {
     exit_status=$?
-    printf '\033[0m' # prevent the terminal cursor from changing color if you exit at just the right moment in any color mode
+    printf '\033[0m' # Reset colors
     exit "$exit_status"
 }
 
 ExitTrap() {
+    # If debug mode is disabled
     if [ "$debug_mode" -eq 0 ]
     then
+        # If save logs is enabled
         if [ "$save_logs" -eq 1 ]
         then
+            # save the log files to the cwd
             [ -f "$file_ping_time" ] && mv "$file_ping_time" "ping_${target_host}_$(date).log"
             [ -f "$file_avg_ping_time" ] && mv "$file_avg_ping_time" "avg_${target_host}_$(date).log"
+        # If save logs is disabled
         elif [ "$save_logs" -eq 0 ]
         then
+            # remove the temporary files
             [ -f "$file_ping_time" ] && rm -f "$file_ping_time"
             [ -f "$file_avg_ping_time" ] && rm -f "$file_avg_ping_time"
         fi
+    # If debug is enabled
     elif [ "$debug_mode" -eq 1 ]
     then
-        [ -f "$file_ping_time" ] && rm -vfi "$file_ping_time"
-        [ -f "$file_avg_ping_time" ] && rm -vfi "$file_avg_ping_time"
+        # Report which temporary file were used
+        [ -f "$file_ping_time" ] && printf '\n%s\n' "Ping log: $file_ping_time" #rm -vfi "$file_ping_time"
+        [ -f "$file_avg_ping_time" ] && printf '%s\n' "Average log: $file_avg_ping_time" #rm -vfi "$file_avg_ping_time"
     fi
 }
 
@@ -116,9 +128,9 @@ END_OF_HELP
 }
 
 OPTERR=1
-while getopts 'hH:s:u:m:j:b:p:a:x:y:i:l:c:f:g:dz:r:' sOPT
+while getopts 'hH:s:u:m:j:b:p:a:x:y:i:l:c:f:g:dz:r:' option
 do
-    case "$sOPT" in
+    case "$option" in
         ('h'|'?') ShowHelp ;;
         ('H') target_host=$OPTARG ;;
         ('s')
@@ -212,7 +224,8 @@ do
                         latest_ping_time=${f6#*=}
                         break 1
                     else
-                    # If columns are not how we expect, search every other column just in case (needs verification implemented)
+                    # If columns are not how we expect, search the columns next to the one we expect
+                    # Different implementations of ping result in different columns for results
                         if [ "${f5%=*}" = 'time' ]
                         then
                             latest_ping_time=${f5#*=}
@@ -221,40 +234,46 @@ do
                         then
                             latest_ping_time=${f7#*=}
                             break 1
-                        elif [ "${f4%=*}" = 'time' ]
-                        then
-                            latest_ping_time=${f4#*=}
-                            break 1
-                        elif [ "${f8%=*}" = 'time' ]
-                        then
-                            latest_ping_time=${f8#*=}
-                            break 1
-                        elif [ "${f3%=*}" = 'time' ]
-                        then
-                            latest_ping_time=${f3#*=}
-                            break 1
-                        elif [ "${f2%=*}" = 'time' ]
-                        then
-                            latest_ping_time=${f2#*=}
-                            break 1
-                        elif [ "${f1%=*}" = 'time' ]
-                        then
-                            latest_ping_time=${f1#*=}
-                            break 1
-                        elif [ "${f0%=*}" = 'time' ]
-                        then
-                            latest_ping_time=${f0#*=}
-                            break 1
                         else
                             latest_ping_time=""
+                            break 1
                         fi
+                        #elif [ "${f4%=*}" = 'time' ]
+                        #then
+                        #    latest_ping_time=${f4#*=}
+                        #    break 1
+                        #elif [ "${f8%=*}" = 'time' ]
+                        #then
+                        #    latest_ping_time=${f8#*=}
+                        #    break 1
+                        #elif [ "${f3%=*}" = 'time' ]
+                        #then
+                        #    latest_ping_time=${f3#*=}
+                        #    break 1
+                        #elif [ "${f2%=*}" = 'time' ]
+                        #then
+                        #    latest_ping_time=${f2#*=}
+                        #    break 1
+                        #elif [ "${f1%=*}" = 'time' ]
+                        #then
+                        #    latest_ping_time=${f1#*=}
+                        #    break 1
+                        #elif [ "${f0%=*}" = 'time' ]
+                        #then
+                        #    latest_ping_time=${f0#*=}
+                        #    break 1
+                        #else
+                        #    latest_ping_time=""
+                        #fi
                         # digit check (checking the data type if latest_ping_time is not empty)
                     fi
                 ;;
             esac
+# NOTE: Do not combine ping arguments (lowers compatibility)
         done <<EOC
 $(ping -n -4 -c 1 "$target_host" 2>/dev/null)
 EOC
+    # If debug mode is enabled (test run)
     elif [ "$debug_mode" -eq 1 ]
     then
         # Used for quickly testing "random" input values using Awk or shuf
@@ -274,13 +293,12 @@ EOC
     fi
 
     # avoid writing null to the data file
-    if [ -n "$latest_ping_time" ]
-    then
+    [ "$latest_ping_time" ] && {
         # write the current ping time to a temporary data file
         printf '%s\n' "${latest_ping_time}" >> "${file_ping_time}"
         # update the data file line count
         data_lines_count=$(wc -l < "$file_ping_time")
-    fi
+    }
 
     # ensure we don't get stuck in an endless loop if a connection is dropped or an unreachable host is specified
     # number of consecutive NULL|zero responses from ping which will cause the script to abort

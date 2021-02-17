@@ -1,3 +1,5 @@
+$ echo "show colornames" | gnuplot
+
   white              #ffffff = 255 255 255
   black              #000000 =   0   0   0
   dark-grey          #a0a0a0 = 160 160 160
