@@ -21,10 +21,10 @@ label_xlabel_samples_color='dark-salmon'
                xtics_color='sienna1'
                ytics_color='sienna1'
               border_color='goldenrod'
-        point_type_average='μ'
         plot_average_color='dark-cyan'
-        point_type_samples='x'
          plot_sample_color='dark-magenta'
+        point_type_samples='x'
+        point_type_average='μ'
 ###############################################################################
 null_response_max=25 # If null_response_count reaches this value the script will abort
 null_response_decay_factor=2 # How much null_response_count will be reduced by (after multiplying by 1) for each successfull ping that follows any ping failure
