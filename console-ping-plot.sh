@@ -1,13 +1,13 @@
-#!/usr/bin/env sh
+#!/bin/sh
 #
-# console-ping-plot.sh UNLICENSE Toazd <wmcdannell@hotmail.com Feb 2021
+# console-ping-plot.sh UNLICENSE
+# Toazd <wmcdannell@hotmail.com> Feb 2021
 #
 # Purpose:
 #   Plot both ping and average ping for a single host in a console-friendly
 #   format using Gnuplot.
 #
-#
-#
+###############################################################################
 # Plot colorscheme-related variables
 ###############################################################################
 # Refer to 'echo "show colornames" | gnuplot' for color
@@ -261,7 +261,7 @@ EOC
     fi
 
     # avoid writing null or 0 to the data file
-    [ "$latest_ping_time" -gt 0 ] && {
+    [ -n "$latest_ping_time" ] && {
         # write the current ping time to a temporary data file
         printf '%s\n' "${latest_ping_time}" >> "${file_ping_time}"
         # update the data file line count
@@ -306,7 +306,7 @@ EOC
     printf '%s\n' "$ping_time_average" >> "$file_avg_ping_time"
 
     # calculate jitter on a rolling basis
-    [ "$latest_ping_time" -gt 0 ] && {
+    [ -n "$latest_ping_time" ] && {
 
         # Alternate placing latest ping time into two seperate variables
         if [ $((data_lines_count%2)) -eq 0 ]; then
