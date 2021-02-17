@@ -38,6 +38,7 @@ ping_max_good=100            # Ping values above this value will be shown in red
                              # Ping values between ping_max_good and ping_max_warn will be shown in yellow.
 ping_max_warn=70             # Ping values below this value will be shown in green.
 
+save_logs=0                  # What to do with temporary log files on exit (1=save to current working path)
 ###############################################################################
 
 null_response_count=0
@@ -57,7 +58,7 @@ data_line=""
 data_lines_count=0
 flag_missing=0
 debug_mode=0
-save_logs=0
+
 debug_random_ping_max=150
 debug_command_generation='s' # a=Awk, s=shuf
 
