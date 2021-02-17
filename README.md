@@ -2,6 +2,12 @@
 Note that the default colorscheme is suitable for a dark background or a dark theme.
 Of course, color related options are easily customizable both inside the script itself and as command-line parameters.
 
+Features
+----------
+Provides visual plot of both data points and a rolling average
+Tracks null/failed pings so that a bad connection can still be plotted (configurable)
+
+
     -h                 - Show this help
     -H <host>          - Host name or IP recognized by ping
     -s <integer>       - Max samples to plot
@@ -12,6 +18,8 @@ Of course, color related options are easily customizable both inside the script 
     -m <mode>          - Gnuplot "dumb" terminal option
                            Accepted values: mono, ansi, ansi256, or ansirgb
                            For colors to work any mode except mono must be specified
+    -F <integer>       - Maximum null/failed ping responses before aborting (0=disable this feature)
+                           Successfull pings interspersed amongst failures will lower the abort counter
     -i <character>     - Pointtype used for sample/ping points plot
                            Only the first character will be used if multiple characters are supplied
     -l <character>     - Pointtype used for points in the average linespoints plot

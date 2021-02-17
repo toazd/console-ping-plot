@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# Colorscheme-related variables
+# Plot colorscheme-related variables
 ###############################################################################
 # Refer to 'echo "show colornames" | gnuplot' for color
 # names and codes supported by your version of Gnuplot.
@@ -13,7 +13,7 @@ label_xlabel_samples_color='dark-salmon'
                xtics_color='dark-khaki'
                ytics_color='dark-khaki'
               border_color='sienna1'
-        point_type_average='μ' # Statistics average symbol
+        point_type_average='μ'
         plot_average_color='royalblue'
         point_type_samples='x'
          plot_sample_color='dark-gray'
@@ -50,28 +50,26 @@ TrapCNTRLC() {
 }
 
 ExitTrap() {
-    # If debug mode is disabled
-    if [ "$debug_mode" -eq 0 ]
-    then
-        # If save logs is enabled
-        if [ "$save_logs" -eq 1 ]
-        then
-            # save the log files to the cwd
-            [ -f "$file_ping_time" ] && mv "$file_ping_time" "ping_${target_host}_$(date).log"
-            [ -f "$file_avg_ping_time" ] && mv "$file_avg_ping_time" "avg_${target_host}_$(date).log"
-        # If save logs is disabled
-        elif [ "$save_logs" -eq 0 ]
-        then
-            # remove the temporary files
-            [ -f "$file_ping_time" ] && rm -f "$file_ping_time"
-            [ -f "$file_avg_ping_time" ] && rm -f "$file_avg_ping_time"
+    if [ -f "$file_ping_time" ] || [ -f "$file_avg_ping_time" ]; then
+        # If debug mode is disabled
+        if [ "$debug_mode" -eq 0 ]; then
+            # If save logs is enabled
+            if [ "$save_logs" -eq 1 ]; then
+                # save the log files to the cwd
+                 mv "$file_ping_time" "ping_${target_host}_$(date).log"
+                 mv "$file_avg_ping_time" "avg_${target_host}_$(date).log"
+            # If save logs is disabled
+            elif [ "$save_logs" -eq 0 ]; then
+                # remove the temporary files
+                rm -f "$file_ping_time"
+                rm -f "$file_avg_ping_time"
+            fi
+        # If debug is enabled
+        elif [ "$debug_mode" -eq 1 ]; then
+            # Report which temporary file were used
+            printf '\n%s\n' "Ping log: $file_ping_time"
+            printf '%s\n' "Average log: $file_avg_ping_time"
         fi
-    # If debug is enabled
-    elif [ "$debug_mode" -eq 1 ]
-    then
-        # Report which temporary file were used
-        [ -f "$file_ping_time" ] && printf '\n%s\n' "Ping log: $file_ping_time" #rm -vfi "$file_ping_time"
-        [ -f "$file_avg_ping_time" ] && printf '%s\n' "Average log: $file_avg_ping_time" #rm -vfi "$file_avg_ping_time"
     fi
 }
 
@@ -93,6 +91,8 @@ ShowHelp() {
     -m <mode>          - Gnuplot "dumb" terminal option (default: $terminal_type)
                            Accepted values: mono, ansi, ansi256, or ansirgb
                            For colors to work any mode except mono must be specified
+    -F <integer>       - Maximum null/failed ping responses before aborting (0=disable this feature)
+                           Successfull pings interspersed amongst failures will lower the abort counter
     -i <character>     - Pointtype used for sample/ping points plot (default: $point_type_samples)
                            Only the first character will be used if multiple characters are supplied
     -l <character>     - Pointtype used for points in the average linespoints plot (default: $point_type_average)
@@ -122,18 +122,18 @@ ShowHelp() {
                            (default: $debug_command_generation)
 
 END_OF_HELP
-    exit
+    exit 0
 }
 
 OPTERR=1
-while getopts 'hH:s:u:m:j:b:p:a:x:y:i:l:c:f:g:dz:r:' option
+while getopts 'hH:s:u:m:j:b:p:a:x:y:i:l:c:f:F:g:dz:r:' option
 do
     case "$option" in
         ('h'|'?') ShowHelp ;;
         ('H') target_host=$OPTARG ;;
         ('s')
-            if [ "$OPTARG" -lt 3 ]
-            then
+            # Set a minimum for the maximum number of data points to plot
+            if [ "$OPTARG" -lt 3 ]; then
                 plot_history_max=3
             else
                 plot_history_max=$OPTARG
@@ -151,6 +151,7 @@ do
         ('i') point_type_samples=$OPTARG ;;
         ('l') point_type_average=$OPTARG ;;
         ('f') label_xlabel_samples_color=$OPTARG ;;
+        ('F') null_response_max=$OPTARG ;;
         ('g') label_ylabel_time_color=$OPTARG ;;
         ('d')
             debug_mode=1
@@ -158,37 +159,31 @@ do
             label_host_color='red'
         ;;
         ('z')
-            if [ "$OPTARG" -lt 2 ]
-            then
+            if [ "$OPTARG" -lt 2 ]; then
                 debug_random_ping_max=2
             else
                 debug_random_ping_max=$OPTARG
             fi
         ;;
         ('r')
-            if [ "$OPTARG" = 's' ] || [ "$OPTARG" = 'a' ]
-            then
-                debug_command_generation=$OPTARG
+            if [ "${OPTARG,,}" = 's' ] || [ "${OPTARG,,}" = 'a' ]; then
+                debug_command_generation=${OPTARG,,}
             else
+                printf '%s\n' "Invalid choice for -r: $OPTARG (valid: 's' or 'a')"
                 exit 1
             fi
-        ;;
-        (':')
-            exit 1
         ;;
     esac
 done
 
 # required parameters
-if [ -z "$target_host" ] && [ "$debug_mode" -eq 0 ]
-then
+if [ -z "$target_host" ] && [ "$debug_mode" -eq 0 ]; then
     printf '%s\n' "${0##*/}: -H is a required parameter"
     ShowHelp
 fi
 
 # check for required commands and report the status of all not found
-while IFS= read -r result
-do
+while IFS= read -r result; do
     case $result in
         (*'not found'*)
             missing=${result%: *}
@@ -206,63 +201,31 @@ file_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
 file_avg_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
 
 # All hope abandon, ye who enter here!
-while :
-do
+while :; do
     # If not in debug mode (normal run mode)
-    if [ "$debug_mode" -eq 0 ]
-    then
+    if [ "$debug_mode" -eq 0 ]; then
         #shellcheck disable=SC2034
-        while IFS=' ' read -r -- f0 f1 f2 f3 f4 f5 f6 f7 f8
-        do
+        # Read the results from ping into variables based on column position
+        while IFS=' ' read -r -- f0 f1 f2 f3 f4 f5 f6 f7 f8; do
             case $f6 in
                 (*'='*)
                     # Get the value after time= from the 7th column
-                    if [ "${f6%=*}" = 'time' ]
-                    then
+                    if [ "${f6%=*}" = 'time' ]; then
                         latest_ping_time=${f6#*=}
                         break 1
                     else
                     # If columns are not how we expect, search the columns next to the one we expect
                     # Different implementations of ping result in different columns for results
-                        if [ "${f5%=*}" = 'time' ]
-                        then
+                        if [ "${f5%=*}" = 'time' ]; then
                             latest_ping_time=${f5#*=}
                             break 1
-                        elif [ "${f7%=*}" = 'time' ]
-                        then
+                        elif [ "${f7%=*}" = 'time' ]; then
                             latest_ping_time=${f7#*=}
                             break 1
                         else
                             latest_ping_time=""
                             break 1
                         fi
-                        #elif [ "${f4%=*}" = 'time' ]
-                        #then
-                        #    latest_ping_time=${f4#*=}
-                        #    break 1
-                        #elif [ "${f8%=*}" = 'time' ]
-                        #then
-                        #    latest_ping_time=${f8#*=}
-                        #    break 1
-                        #elif [ "${f3%=*}" = 'time' ]
-                        #then
-                        #    latest_ping_time=${f3#*=}
-                        #    break 1
-                        #elif [ "${f2%=*}" = 'time' ]
-                        #then
-                        #    latest_ping_time=${f2#*=}
-                        #    break 1
-                        #elif [ "${f1%=*}" = 'time' ]
-                        #then
-                        #    latest_ping_time=${f1#*=}
-                        #    break 1
-                        #elif [ "${f0%=*}" = 'time' ]
-                        #then
-                        #    latest_ping_time=${f0#*=}
-                        #    break 1
-                        #else
-                        #    latest_ping_time=""
-                        #fi
                         # digit check (checking the data type if latest_ping_time is not empty)
                     fi
                 ;;
@@ -272,16 +235,12 @@ do
 $(ping -n -4 -c 1 "$target_host" 2>/dev/null)
 EOC
     # If debug mode is enabled (test run)
-    elif [ "$debug_mode" -eq 1 ]
-    then
+    elif [ "$debug_mode" -eq 1 ]; then
         # Used for quickly testing "random" input values using Awk or shuf
-        while [ "$latest_ping_time" = "$ping_time_last" ]
-        do
-            if [ "$debug_command_generation" = 'a' ]
-            then
+        while [ "$latest_ping_time" = "$ping_time_last" ]; do
+            if [ "$debug_command_generation" = 'a' ]; then
                 latest_ping_time=$(awk -v min=0 -v max="$debug_random_ping_max" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}')
-            elif [ "$debug_command_generation" = 's' ]
-            then
+            elif [ "$debug_command_generation" = 's' ]; then
                 latest_ping_time=$(shuf -i 0-"$debug_random_ping_max" -n 1)
             else
                 exit 1
@@ -290,8 +249,8 @@ EOC
         ping_time_last=$latest_ping_time
     fi
 
-    # avoid writing null to the data file
-    [ "$latest_ping_time" ] && {
+    # avoid writing null or 0 to the data file
+    [ "$latest_ping_time" -gt 0 ] && {
         # write the current ping time to a temporary data file
         printf '%s\n' "${latest_ping_time}" >> "${file_ping_time}"
         # update the data file line count
@@ -300,35 +259,33 @@ EOC
 
     # ensure we don't get stuck in an endless loop if a connection is dropped or an unreachable host is specified
     # number of consecutive NULL|zero responses from ping which will cause the script to abort
-    if [ "$(printf '%s\n' "$latest_ping_time > 0" | bc)" -eq 1 ]
-    then
-        # Successfull pings will lower the abort counter
-        [ "$null_response_count" -gt 0 ] && null_response_count=$((null_response_count-1))
-    else
-        null_response_count=$((null_response_count+1))
-        if [ "$null_response_count" -ge "$null_response_max" ]
-        then
-            printf '%s\n' "Max NULL or Zero responses reached. Aborting."
-            exit 1
+    # set null_response_max=0 or use the script parameter (-F 0) to disable this feature
+    [ "$null_response_max" -ne 0 ] && {
+        if [ "$(printf '%s\n' "$latest_ping_time > 0" | bc)" -eq 1 ]; then
+            # Successfull pings will lower the abort counter
+            [ "$null_response_count" -gt 0 ] && null_response_count=$((null_response_count-1))
+        else
+            null_response_count=$((null_response_count+1))
+            [ "$null_response_count" -ge "$null_response_max" ] && {
+                printf '%s\n' "Max NULL or Zero responses reached. Aborting."
+                exit 1
+            }
         fi
-    fi
+    }
 
     # calculate average ping on a rolling basis
     ping_time_average=0
-    if [ "$data_lines_count" -gt 1 ]
-    then
-        while read -r data_line
-        do
+    if [ "$data_lines_count" -gt 1 ]; then
+        while read -r data_line; do
+            # NOTE: scale= may be ignored for operations excluding division (bc)
             ping_time_average=$(printf '%s\n' "scale=4; $ping_time_average + $data_line" | bc -l)
         done < "$file_ping_time"
-    elif [ "$data_lines_count" -eq 1 ]
-    then
+    elif [ "$data_lines_count" -eq 1 ]; then
         ping_time_average=$latest_ping_time
     fi
 
     # avoid dividing by zero
-    if [ "$data_lines_count" -eq 0 ]
-    then
+    if [ "$data_lines_count" -eq 0 ]; then
         ping_time_average=0
     else
         ping_time_average=$(printf '%s\n' "scale=4; $ping_time_average / $data_lines_count" | bc -l)
@@ -338,37 +295,33 @@ EOC
     printf '%s\n' "$ping_time_average" >> "$file_avg_ping_time"
 
     # calculate jitter on a rolling basis
-    if [ -n "$latest_ping_time" ]
-    then
-        if [ $((data_lines_count%2)) -eq 0 ]
-        then
+    [ "$latest_ping_time" -gt 0 ] && {
+
+        # Alternate placing latest ping time into two seperate variables
+        if [ $((data_lines_count%2)) -eq 0 ]; then
             jitter_sample_a=$latest_ping_time
-        elif [ $((data_lines_count%2)) -eq 1 ]
-        then
+        elif [ $((data_lines_count%2)) -eq 1 ]; then
             jitter_sample_b=$latest_ping_time
         fi
         jitter_count=$((jitter_count+1))
 
-        if [ "$jitter_count" -ge 2 ]
-        then
+        [ "$jitter_count" -ge 2 ] && {
             jitter_abs_delta=$(printf '%s\n' "scale=4; $jitter_sample_a - $jitter_sample_b" | bc -l)
             jitter_abs_delta=${jitter_abs_delta#-}
             jitter_abs_delta_sum=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum + $jitter_abs_delta" | bc -l)
             jitter_delta_count=$((jitter_delta_count+1))
-        fi
+        }
 
-        if [ "$jitter_delta_count" -ge 1 ]
-        then
+        [ "$jitter_delta_count" -ge 1 ] && {
             jitter_current=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
-        fi
+        }
 
         # DEBUG
         #[ "$jitter_delta_count" -ge 1 ] && printf '%s\n' "$jitter_current" >> jitter.out
-    fi
+    }
 
     # max history reached, clear data files and start over
-    if [ "$data_lines_count" -gt "$plot_history_max" ]
-    then
+    if [ "$data_lines_count" -gt "$plot_history_max" ]; then
         printf "" > "$file_ping_time"
         printf "" > "$file_avg_ping_time"
         continue
@@ -381,8 +334,7 @@ EOC
     [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
     # Adjust the yrange using the max and min, centered around the avg
-    #if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]
-    #then
+    #if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]; then
     #    plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
     #    plot_y_min=$(printf '%s\n' "scale=4; ($ping_time_min - ($ping_time_average / 10))" | bc -l)
     #fi
@@ -395,44 +347,36 @@ EOC
 
     # Color the ping stats labels text based on quality thresholds set above
     # Latest ping time
-    if [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_good" | bc)" -eq 1 ]
-    then
+    if [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_current_color="red"
-    elif [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_warn && $latest_ping_time < $ping_max_good" | bc)" -eq 1 ]
-    then
+    elif [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_warn && $latest_ping_time < $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_current_color="yellow"
     else
         label_ping_current_color="green"
     fi
 
     # Latest ping time minimum
-    if [ "$(printf '%s\n' "$ping_time_min >= $ping_max_good" | bc)" -eq 1 ]
-    then
+    if [ "$(printf '%s\n' "$ping_time_min >= $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_min_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_min >= $ping_max_warn && $ping_time_min < $ping_max_good" | bc)" -eq 1 ]
-    then
+    elif [ "$(printf '%s\n' "$ping_time_min >= $ping_max_warn && $ping_time_min < $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_min_color="yellow"
     else
         label_ping_min_color="green"
     fi
 
     # Latest ping time maximum
-    if [ "$(printf '%s\n' "$ping_time_max >= $ping_max_good" | bc)" -eq 1 ]
-    then
+    if [ "$(printf '%s\n' "$ping_time_max >= $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_max_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_max >= $ping_max_warn && $ping_time_max < $ping_max_good" | bc)" -eq 1 ]
-    then
+    elif [ "$(printf '%s\n' "$ping_time_max >= $ping_max_warn && $ping_time_max < $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_max_color="yellow"
     else
         label_ping_max_color="green"
     fi
 
     # Latest ping time average
-    if [ "$(printf '%s\n' "$ping_time_average >= $ping_max_good" | bc)" -eq 1 ]
-    then
+    if [ "$(printf '%s\n' "$ping_time_average >= $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_avg_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_average >= $ping_max_warn && $ping_time_average < $ping_max_good" | bc)" -eq 1 ]
-    then
+    elif [ "$(printf '%s\n' "$ping_time_average >= $ping_max_warn && $ping_time_average < $ping_max_good" | bc)" -eq 1 ]; then
         label_ping_avg_color="yellow"
     else
         label_ping_avg_color="green"
