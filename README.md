@@ -7,10 +7,10 @@ https://www.reddit.com/r/commandline/comments/hnjpc6/pingplotter_makes_a_live_gr
 
 Features
 ----------
-Written targeting POSIX sh and to be as minimal and as effecient as possible while still maintaining a high degree of legibility and precision.  
-Provides visual plot of both data points and a rolling average.  
-Tracks null/failed pings so that a bad connection can still be plotted (configurable).  
-All relevant calculations are done using bc and support displaying three decimal places (eg. 43.517).  
+Written targeting POSIX sh and to be as minimal and as effecient as possible while still maintaining a high degree of legibility and precision  
+Provides visual plot of both data points and a rolling average  
+Tracks null/failed pings so that a bad connection can still be plotted (configurable)  
+All relevant calculations are done using bc and support displaying three decimal places (eg. 43.517)  
 
 
     -h                 - Show this help
