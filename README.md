@@ -2,8 +2,6 @@
 Note that the default colorscheme is suitable for a dark background or a dark theme.
 Of course, color related options are easily customizable both inside the script itself and as command-line parameters.
 
-Using gnuplot, plot a cumulative (up to a customizable history size) ping and average ping in dumb terminal mode and update it at a customizable interval.
-
     Requirements:      Gnuplot, ping, bc
 
     -h                 - Show this help
