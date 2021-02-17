@@ -7,12 +7,13 @@
 #   Plot both ping and average ping for a single host in a console-friendly
 #   format using Gnuplot.
 #
-###############################################################################
-# Plot colorscheme-related variables
-###############################################################################
-# Refer to 'echo "show colornames" | gnuplot' for color
-# names and codes supported by your version of Gnuplot.
+# Refer to the output of the command
+#   $ echo "show colornames" | gnuplot
+# for color names and codes supported by your version of gnuplot
 #
+#
+#### Plot colorscheme-related variables #######################################
+
              terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
           label_host_color='red'
 label_xlabel_samples_color='dark-salmon'
@@ -25,15 +26,20 @@ label_xlabel_samples_color='dark-salmon'
          plot_sample_color='dark-magenta'
         point_type_samples='x'
         point_type_average='μ'
+
+#### Configurable variables ###################################################
+
+null_response_max=25         # If null_response_count reaches this value the script will abort.
+null_response_decay_factor=2 # How much null_response_count will be reduced by
+                             #  (after multiplying by 1) for each successfull ping that follows any ping failure.
+update_interval=1            # Number of seconds between ping requests.
+plot_history_max=60          # Maximum number of data points to show at a time.
+ping_max_good=100            # Ping values above this value will be shown in red.
+                             # Ping values between ping_max_good and ping_max_warn will be shown in yellow.
+ping_max_warn=70             # Ping values below this value will be shown in green.
+
 ###############################################################################
-null_response_max=25 # If null_response_count reaches this value the script will abort
-null_response_decay_factor=2 # How much null_response_count will be reduced by (after multiplying by 1) for each successfull ping that follows any ping failure
-update_interval=1 # Number of seconds between ping requests
-plot_history_max=60 # Maximum number of data points to show at a time
-ping_max_good=100 # Ping values above this value will be shown in red
-# Ping values between ping_max_good and ping_max_warn will be shown in yellow
-ping_max_warn=70 # Ping values below this value will be shown in green
-###############################################################################
+
 null_response_count=0
 target_host=""
 file_ping_time=""
@@ -54,6 +60,8 @@ debug_mode=0
 save_logs=0
 debug_random_ping_max=150
 debug_command_generation='s' # a=Awk, s=shuf
+
+#### Functions ################################################################
 
 TrapCNTRLC() {
     exit_status=$?
@@ -137,6 +145,8 @@ END_OF_HELP
     exit 0
 }
 
+#### Parse command-line parameters and arguments ##############################
+
 OPTERR=1
 while getopts 'hH:s:u:m:j:b:p:a:x:y:i:l:c:f:F:g:dz:r:' option
 do
@@ -194,6 +204,8 @@ if [ -z "$target_host" ] && [ "$debug_mode" -eq 0 ]; then
     ShowHelp
 fi
 
+###############################################################################
+
 # check for required commands and report the status of all not found
 while IFS= read -r result; do
     case $result in
@@ -212,6 +224,8 @@ EOC
 # setup temporary files to hold ping results
 file_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
 file_avg_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
+
+#### Main loop ################################################################
 
 # All hope abandon, ye who enter here!
 while :; do
@@ -255,14 +269,12 @@ EOC
                 latest_ping_time=$(awk -v min=0 -v max="$debug_random_ping_max" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}')
             elif [ "$debug_command_generation" = 's' ]; then
                 latest_ping_time=$(shuf -i 0-"$debug_random_ping_max" -n 1)
-            else
-                exit 1
             fi
         done
         ping_time_last=$latest_ping_time
     fi
 
-    # avoid writing null or 0 to the data file
+    # avoid writing null to the data file
     [ -n "$latest_ping_time" ] && {
         # write the current ping time to a temporary data file
         printf '%s\n' "${latest_ping_time}" >> "${file_ping_time}"
