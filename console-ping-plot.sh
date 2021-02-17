@@ -49,6 +49,7 @@ jitter_abs_delta=0
 jitter_abs_delta_sum=0
 data_line=""
 data_lines_count=0
+flag_missing=0
 debug_mode=0
 save_logs=0
 debug_random_ping_max=150
@@ -177,8 +178,8 @@ do
             fi
         ;;
         ('r')
-            if [ "${OPTARG,,}" = 's' ] || [ "${OPTARG,,}" = 'a' ]; then
-                debug_command_generation=${OPTARG,,}
+            if [ "$OPTARG" = 's' ] || [ "$OPTARG" = 'a' ]; then
+                debug_command_generation=$OPTARG
             else
                 printf '%s\n' "Invalid choice for -r: $OPTARG (valid: 's' or 'a')"
                 exit 1
@@ -200,12 +201,13 @@ while IFS= read -r result; do
             missing=${result%: *}
             missing=${missing##*: }
             printf '%s\n' "$missing is a required command"
-            exit 1
+            flag_missing=1
         ;;
     esac
 done <<EOC
 $(command -V gnuplot ping bc mktemp 2>&1)
 EOC
+[ "$flag_missing" -eq 1 ] && exit 1
 
 # setup temporary files to hold ping results
 file_ping_time=$(mktemp -q --tmpdir "${0##*/}.$$.tmp.XXXXXXXXXX")
