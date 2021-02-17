@@ -300,10 +300,9 @@ EOC
 
     # ensure we don't get stuck in an endless loop if a connection is dropped or an unreachable host is specified
     # number of consecutive NULL|zero responses from ping which will cause the script to abort
-    # NOTE interspersed successful pings > @(NULL|0) will reduce the count so a bad connection can still be plotted
-    # NOTE null_response_max might need tweaking
     if [ "$(printf '%s\n' "$latest_ping_time > 0" | bc)" -eq 1 ]
     then
+        # Successfull pings will lower the abort counter
         [ "$null_response_count" -gt 0 ] && null_response_count=$((null_response_count-1))
     else
         null_response_count=$((null_response_count+1))
@@ -446,7 +445,7 @@ EOC
     label_ping_avg=" Average: $(printf '%1.3g' "$ping_time_average") "
     label_ping_current=" Current: $(printf '%1.3g' "$latest_ping_time") "
     label_jitter=" Jitter: $(printf '%1.3g' "$jitter_current") "
-    label_samples="${data_lines_count}/${plot_history_max} samples, ${update_interval}s interval, ${null_response_count}/${null_response_max} failures"
+    label_samples="${data_lines_count}/${plot_history_max} samples, ${update_interval}s interval"
 
     # avoid errors with gnuplot when there is no y-axis coordinate to plot
     # TODO test if this is even needed anymore
