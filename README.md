@@ -1,6 +1,6 @@
 ![](https://github.com/toazd/console-ping-plot/blob/master/preview/preview.gif)
 Note that the default colorscheme is suitable for a dark background or a dark theme.
-Of course, color related options are easily customizable both inside the script itself and as command-line parameters.
+Color related options are easily customizable both inside the script itself and as command-line parameters.
 
 Features
 ----------
