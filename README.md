@@ -1,5 +1,4 @@
 ![](https://github.com/toazd/console-ping-plot/blob/master/preview/preview.gif)
-<img src-"https://github.com/toazd/console-ping-plot/blob/master/preview/preview.gif">
 
 Using gnuplot, plot a cumulative (up to a customizable history size) ping and average ping in dumb terminal mode and update it at a customizable interval.
 
