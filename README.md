@@ -1,11 +1,16 @@
-![](https://github.com/toazd/console-ping-plot/blob/master/preview/preview.gif)
-Note that the default colorscheme is suitable for a dark background or a dark theme.
-Color related options are easily customizable both inside the script itself and as command-line parameters.
+![](https://github.com/toazd/console-ping-plot/blob/master/preview/preview.gif)  
+Note that the default colorscheme is suitable for a dark background or a dark theme.  
+Color related options are easily customizable both inside the script itself and as command-line parameters.  
+
+This script was created as a learning exercise inspired by:  
+https://www.reddit.com/r/commandline/comments/hnjpc6/pingplotter_makes_a_live_graph_of_ping_times_to_a/
 
 Features
 ----------
-Provides visual plot of both data points and a rolling average
-Tracks null/failed pings so that a bad connection can still be plotted (configurable)
+Written targeting POSIX sh and to be as minimal and as effecient as possible while still maintaining a high degree of legibility and precision.  
+Provides visual plot of both data points and a rolling average.  
+Tracks null/failed pings so that a bad connection can still be plotted (configurable).  
+All relevant calculations are done using bc and support displaying three decimal places (eg. 43.517).  
 
 
     -h                 - Show this help
