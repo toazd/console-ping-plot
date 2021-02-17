@@ -23,7 +23,7 @@ file_ping_time=""
 file_avg_ping_time=""
 ping_time_min=999999999999
 ping_time_max=0
-null_response_max=50
+null_response_max=25
 null_response_count=0
 update_interval=1
 plot_history_max=60
@@ -82,8 +82,6 @@ ShowHelp() {
     cat <<END_OF_HELP
 
     ${0##*/}
-
-    Requirements:      Gnuplot, ping, bc
 
     -h                 - Show this help
     -H <host>          - Host name or IP recognized by ping
