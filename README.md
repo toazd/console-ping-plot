@@ -2,8 +2,6 @@
 Note that the default colorscheme is suitable for a dark background or a dark theme.
 Of course, color related options are easily customizable both inside the script itself and as command-line parameters.
 
-    Requirements:      Gnuplot, ping, bc
-
     -h                 - Show this help
     -H <host>          - Host name or IP recognized by ping
     -s <integer>       - Max samples to plot
