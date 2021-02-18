@@ -59,6 +59,7 @@ ping_max_good=100            # Ping values above this value will be shown in red
 ping_max_warn=70             # Ping values below this value will be shown in green.
 
 save_logs=0                  # What to do with temporary log files on exit (1=save to current working path)
+
 ###############################################################################
 
 null_response_count=0
@@ -78,7 +79,6 @@ data_line=""
 data_lines_count=0
 flag_missing=0
 debug_mode=0
-
 debug_random_ping_max=150
 debug_command_generation='s' # a=Awk, s=shuf
 
@@ -86,11 +86,12 @@ debug_command_generation='s' # a=Awk, s=shuf
 
 TrapCNTRLC() {
     exit_status=$?
-    printf '\033[0m' # Reset colors
+    printf '\033[0m'
     exit "$exit_status"
 }
 
 ExitTrap() {
+    # Temporary file cleanup
     if [ -f "$file_ping_time" ] || [ -f "$file_avg_ping_time" ]; then
         # If debug mode is disabled
         if [ "$debug_mode" -eq 0 ]; then
