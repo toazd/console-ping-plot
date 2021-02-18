@@ -12,8 +12,8 @@
 # for color names and codes supported by your version of gnuplot
 #
 #
-########################################
-                     theme=light # Choose the default colorscheme  ############
+######### Choose the default colorscheme ######################################
+theme=dark
 ###############################################################################
 if [ "$theme" = "dark" ]; then
 
@@ -30,7 +30,7 @@ label_xlabel_samples_color='dark-salmon'
         point_type_samples='x'
         point_type_average='μ'
 
-elif [ "$theme" = "light" ]; then
+elif [ "$theme" = "light" ]; then # WIP - not finished
 
              terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
           label_host_color='red'
