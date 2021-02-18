@@ -102,8 +102,8 @@ ShowHelp() {
 
     ${0##*/}
 
-    -h                 - Show this help
-    -H <host>          - Host name or IP recognized by ping
+    -H                 - Show this help
+    -h <host>          - Host name or IP recognized by ping
     -s <integer>       - Max samples to plot (default: $plot_history_max)
                            Max x-axis samples before clearing and starting over
                            Must be greater than or equal to 3
@@ -149,11 +149,11 @@ END_OF_HELP
 #### Parse command-line parameters and arguments ##############################
 
 OPTERR=1
-while getopts 'hH:s:u:m:j:b:p:a:x:y:i:l:c:f:F:g:dz:r:' option
+while getopts 'h:Hs:u:m:j:b:p:a:x:y:i:l:c:f:F:g:dz:r:' option
 do
     case "$option" in
-        ('h'|'?') ShowHelp ;;
-        ('H') target_host=$OPTARG ;;
+        ('H'|'?') ShowHelp ;;
+        ('h') target_host=$OPTARG ;;
         ('s')
             # Set a minimum for the maximum number of data points to plot
             if [ "$OPTARG" -lt 3 ]; then
@@ -201,7 +201,7 @@ done
 
 # required parameters
 if [ -z "$target_host" ] && [ "$debug_mode" -eq 0 ]; then
-    printf '%s\n' "${0##*/}: -H is a required parameter"
+    printf '%s\n' "${0##*/}: -h is a required parameter"
     ShowHelp
 fi
 
@@ -370,6 +370,10 @@ EOC
     console_dimensions=$(stty size)
     console_height=${console_dimensions% *}
     console_width=${console_dimensions#* }
+    if [ "$console_height" -lt 25 ] || [ "$console_width" -lt 25 ]; then
+        printf '%s\n' "Aborting (screen area too small)"
+        exit 1
+    fi
 
     # Color the ping stats labels text based on quality thresholds set above
     # Latest ping time
