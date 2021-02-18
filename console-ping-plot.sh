@@ -12,7 +12,10 @@
 # for color names and codes supported by your version of gnuplot
 #
 #
-#### Plot colorscheme-related variables #######################################
+########################################
+                     theme=light # Choose the default colorscheme  ############
+###############################################################################
+if [ "$theme" = "dark" ]; then
 
              terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
           label_host_color='red'
@@ -26,6 +29,23 @@ label_xlabel_samples_color='dark-salmon'
          plot_sample_color='dark-magenta'
         point_type_samples='x'
         point_type_average='μ'
+
+elif [ "$theme" = "light" ]; then
+
+             terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
+          label_host_color='red'
+label_xlabel_samples_color='dark-salmon'
+   label_ylabel_time_color='dark-salmon'
+        label_jitter_color='dark-spring-green'
+               xtics_color='dark-chartreuse'
+               ytics_color='sienna1'
+              border_color='dark-chartreuse'
+        plot_average_color='dark-cyan'
+         plot_sample_color='dark-magenta'
+        point_type_samples='x'
+        point_type_average='μ'
+
+fi
 
 #### Configurable variables ###################################################
 
@@ -429,7 +449,7 @@ EOC
     #set label \"DEBUG - DeltaSum: $jitter_abs_delta_sum JitDeltaCnt: $jitter_delta_count JitCnt: $jitter_count SmpA: $jitter_sample_a SmpB: $jitter_sample_b AbsDelta: $jitter_abs_delta\" at graph 0.5,0.05 center front nopoint textcolor \"red\"; \
     # set label \"($plot_y_min $plot_y_max)\" at graph 0.5,0.3 center front nopoint textcolor \"red\"; \
     #set yrange [$plot_y_min:$plot_y_max]; \
-    gnuplot -e "set terminal dumb enhanced $terminal_type size $console_width, $console_height; \
+    gnuplot -e "set term dumb $terminal_type size $console_width, $console_height; \
                 set encoding utf8; set key off; set autoscale x; set autoscale y; \
                 set x2label; set y2label; \
 
