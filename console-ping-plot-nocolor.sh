@@ -7,45 +7,6 @@
 #   Plot both ping and average ping for a single host in a console-friendly
 #   format using Gnuplot.
 #
-# Refer to the output of the command
-#   $ echo "show colornames" | gnuplot
-# for color names and codes supported by your version of gnuplot
-#
-#
-######### Choose the default colorscheme ######################################
-theme=dark
-###############################################################################
-if [ "$theme" = "dark" ]; then
-
-             terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
-          label_host_color='red'
-label_xlabel_samples_color='dark-salmon'
-   label_ylabel_time_color='dark-salmon'
-        label_jitter_color='dark-spring-green'
-               xtics_color='sienna1'
-               ytics_color='sienna1'
-              border_color='goldenrod'
-        plot_average_color='dark-cyan'
-         plot_sample_color='dark-magenta'
-        point_type_samples='x'
-        point_type_average='μ'
-
-elif [ "$theme" = "light" ]; then # WIP - not finished
-
-             terminal_type='ansirgb' # mono, ansi, ansi256, ansirgb
-          label_host_color='red'
-label_xlabel_samples_color='dark-salmon'
-   label_ylabel_time_color='dark-salmon'
-        label_jitter_color='dark-spring-green'
-               xtics_color='sienna1'
-               ytics_color='sienna1'
-              border_color='goldenrod'
-        plot_average_color='dark-cyan'
-         plot_sample_color='dark-magenta'
-        point_type_samples='x'
-        point_type_average='μ'
-
-fi
 
 #### Configurable variables ###################################################
 
@@ -54,14 +15,14 @@ null_response_decay_factor=2 # How much null_response_count will be reduced by
                              #  (after multiplying by 1) for each successfull ping that follows any ping failure.
 update_interval=1            # Number of seconds between ping requests.
 plot_history_max=60          # Maximum number of data points to show at a time.
-ping_max_good=100            # Ping values above this value will be shown in red.
-                             # Ping values between ping_max_good and ping_max_warn will be shown in yellow.
-ping_max_warn=70             # Ping values below this value will be shown in green.
 
 save_logs=0                  # What to do with temporary log files on exit (1=save to current working path)
 
 ###############################################################################
 
+terminal_type='mono'
+point_type_samples='x'
+point_type_average='μ'
 null_response_count=0
 target_host=""
 file_ping_time=""
@@ -130,30 +91,12 @@ ShowHelp() {
                            Must be greater than or equal to 3
     -u <seconds>       - Plot update interval (default: $update_interval)
                            Values supported by sleep. Zero means as fast as possible.
-    -m <mode>          - Gnuplot "dumb" terminal option (default: $terminal_type)
-                           Accepted values: mono, ansi, ansi256, or ansirgb
-                           For colors to work any mode except mono must be specified
     -F <integer>       - Maximum null/failed ping responses before aborting (0=disable this feature)
                            Successfull pings interspersed amongst failures will lower the abort counter
     -i <character>     - Pointtype used for sample/ping points plot (default: $point_type_samples)
                            Only the first character will be used if multiple characters are supplied
     -l <character>     - Pointtype used for points in the average linespoints plot (default: $point_type_average)
                            Only the first character will be used if multiple characters are supplied
-    -c <colorspec>     - Host label text color (default: $label_host_color)
-    -j <colorspec>     - Jitter label text color (default: $label_jitter_color)
-    -f <colorspec>     - X-axis label text color (default: $label_xlabel_samples_color)
-    -g <colorspec>     - Y-axis label label text color (default: $label_ylabel_time_color)
-    -b <colorspec>     - Border color (default: $border_color)
-                           Color of the border including the x-axis and y-axis surrounding the plot
-                           Must be a valid color recognized by gnuplot
-    -p <colorspec>     - Points plot (sample/ping) color (default: $plot_sample_color)
-                           Color of the points that plot each sample/ping
-    -a <colorspec>     - Linespoints plot (average) color (default: $plot_average_color)
-                           Color of the lines and points that plot average (ping)
-    -x <colorspec>     - Xtics color (default: $xtics_color)
-                           Color of the major labeled tics on the x-axis
-    -y <colorspec>     - Ytics color (default: $ytics_color)
-                           Color of the major labeled tics on the y-axis
     -d                 - Enable Debug mode (default: off)
                            Disables ping and instead ping time values are random generated values
                            You will be asked to remove temporary data files on script exit instead of silent removal
@@ -170,7 +113,7 @@ END_OF_HELP
 #### Parse command-line parameters and arguments ##############################
 
 OPTERR=1
-while getopts 'h:Hs:u:m:j:b:p:a:x:y:i:l:c:f:F:g:dz:r:' option
+while getopts 'h:Hs:u:i:l:F:dz:r:' option
 do
     case "$option" in
         ('H'|'?') ShowHelp ;;
@@ -184,23 +127,12 @@ do
             fi
         ;;
         ('u') update_interval=$OPTARG ;;
-        ('m') terminal_type=$OPTARG ;;
-        ('c') label_host_color=$OPTARG ;;
-        ('j') label_jitter_color=$OPTARG ;;
-        ('b') border_color=$OPTARG ;;
-        ('p') plot_sample_color=$OPTARG ;;
-        ('a') plot_average_color=$OPTARG ;;
-        ('x') xtics_color=$OPTARG ;;
-        ('y') ytics_color=$OPTARG ;;
         ('i') point_type_samples=$OPTARG ;;
         ('l') point_type_average=$OPTARG ;;
-        ('f') label_xlabel_samples_color=$OPTARG ;;
         ('F') null_response_max=$OPTARG ;;
-        ('g') label_ylabel_time_color=$OPTARG ;;
         ('d')
             debug_mode=1
             target_host='DEBUG'
-            label_host_color='red'
         ;;
         ('z')
             if [ "$OPTARG" -lt 2 ]; then
@@ -364,9 +296,6 @@ EOC
         [ "$jitter_delta_count" -ge 1 ] && {
             jitter_current=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
         }
-
-        # DEBUG
-        #[ "$jitter_delta_count" -ge 1 ] && printf '%s\n' "$jitter_current" >> jitter.out
     }
 
     # max history reached, clear data files and start over
@@ -382,100 +311,42 @@ EOC
     # If the current ping time is less than the current ping min it becomes the latest minimum
     [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
-    # Adjust the yrange using the max and min, centered around the avg
-    #if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]; then
-    #    plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
-    #    plot_y_min=$(printf '%s\n' "scale=4; ($ping_time_min - ($ping_time_average / 10))" | bc -l)
-    #fi
-
     # Get the current screen character width and height for gnuplot
-    # TODO: what if we have to guess (stty not available/fails)
     console_dimensions=$(stty size)
     console_height=${console_dimensions% *}
     console_width=${console_dimensions#* }
-    if [ "$console_height" -lt 25 ] || [ "$console_width" -lt 25 ]; then
-        printf '%s\n' "Aborting (screen area too small)"
-        exit 1
-    fi
-
-    # Color the ping stats labels text based on quality thresholds set above
-    # Latest ping time
-    if [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_current_color="red"
-    elif [ "$(printf '%s\n' "$latest_ping_time >= $ping_max_warn && $latest_ping_time < $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_current_color="yellow"
-    else
-        label_ping_current_color="green"
-    fi
-
-    # Latest ping time minimum
-    if [ "$(printf '%s\n' "$ping_time_min >= $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_min_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_min >= $ping_max_warn && $ping_time_min < $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_min_color="yellow"
-    else
-        label_ping_min_color="green"
-    fi
-
-    # Latest ping time maximum
-    if [ "$(printf '%s\n' "$ping_time_max >= $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_max_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_max >= $ping_max_warn && $ping_time_max < $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_max_color="yellow"
-    else
-        label_ping_max_color="green"
-    fi
-
-    # Latest ping time average
-    if [ "$(printf '%s\n' "$ping_time_average >= $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_avg_color="red"
-    elif [ "$(printf '%s\n' "$ping_time_average >= $ping_max_warn && $ping_time_average < $ping_max_good" | bc)" -eq 1 ]; then
-        label_ping_avg_color="yellow"
-    else
-        label_ping_avg_color="green"
-    fi
+    #if [ "$console_height" -lt 25 ] || [ "$console_width" -lt 25 ]; then
+    #    printf '%s\n' "Aborting (screen area too small)"
+    #    exit 1
+    #fi
 
     # Make the labels
     label_host=" $target_host "
-    label_ping_min=" Minimum: $(printf '%1.3g' "$ping_time_min") "
-    label_ping_max=" Maximum: $(printf '%1.3g' "$ping_time_max") "
-    label_ping_avg=" Average: $(printf '%1.3g' "$ping_time_average") "
-    label_ping_current=" Current: $(printf '%1.3g' "$latest_ping_time") "
-    label_jitter=" Jitter: $(printf '%1.3g' "$jitter_current") "
+    label_ping_min=" MIN: $(printf '%1.3g' "$ping_time_min") "
+    label_ping_max=" MAX: $(printf '%1.3g' "$ping_time_max") "
+    label_ping_avg=" AVG: $(printf '%1.3g' "$ping_time_average") "
+    label_ping_current=" CUR: $(printf '%1.3g' "$latest_ping_time") "
+    label_jitter=" JIT: $(printf '%1.3g' "$jitter_current") "
     label_samples="${data_lines_count}/${plot_history_max} samples, ${update_interval}s interval"
 
-    # avoid errors with gnuplot when there is no y-axis coordinate to plot
-    # TODO test if this is even needed anymore
-    #[ "$(printf '%s\n' "$plot_y_min >= $plot_y_max" | bc)" -eq 1 ] && continue
-
-    # DEBUG labels
-    #set label \"DEBUG - DeltaSum: $jitter_abs_delta_sum JitDeltaCnt: $jitter_delta_count JitCnt: $jitter_count SmpA: $jitter_sample_a SmpB: $jitter_sample_b AbsDelta: $jitter_abs_delta\" at graph 0.5,0.05 center front nopoint textcolor \"red\"; \
-    # set label \"($plot_y_min $plot_y_max)\" at graph 0.5,0.3 center front nopoint textcolor \"red\"; \
-    #set yrange [$plot_y_min:$plot_y_max]; \
-    gnuplot -e "set term dumb $terminal_type size $console_width, $console_height; \
+    gnuplot -e "set term dumb noenhanced $terminal_type size $console_width, $console_height; \
                 set encoding utf8; set key off; set autoscale x; set autoscale y; \
                 set x2label; set y2label; \
-
-                set xlabel \"$label_samples\" norotate offset character 0,0 textcolor \"$label_xlabel_samples_color\"; \
-                set ylabel \"Time\n(ms)\" norotate offset character 4,2 textcolor \"$label_ylabel_time_color\"; \
-
+                set xlabel \"$label_samples\" norotate offset character 0,0; \
+                set ylabel \"Time\n(ms)\" norotate offset character 4,2; \
                 set bmargin 3; set tmargin 3; set rmargin 1; \
-                set border front linestyle 1 linecolor \"${border_color}\"; \
-
-                set xtics mirror border in autojustify scale default textcolor \"$xtics_color\"; \
-                set ytics mirror border in autojustify scale default textcolor \"$ytics_color\"; \
-
-                set label \"$label_host\" at graph 0.5,0.01 center front nopoint textcolor \"$label_host_color\"; \
-
-                set label \"$label_ping_min\" at graph 0.25,1 center front nopoint textcolor \"$label_ping_min_color\"; \
-                set label \"$label_ping_max\" at graph 0.37,1 center front nopoint textcolor \"$label_ping_max_color\"; \
-                set label \"$label_ping_avg\" at graph 0.49,1 center front nopoint textcolor \"$label_ping_avg_color\"; \
-                set label \"$label_ping_current\" at graph 0.61,1 center front nopoint textcolor \"$label_ping_current_color\"; \
-                set label \"$label_jitter\" at graph 0.73,1 center front nopoint textcolor \"$label_jitter_color\"; \
-
+                set border front linestyle 1; \
+                set xtics mirror border in autojustify scale default; \
+                set ytics mirror border in autojustify scale default; \
+                set label \"$label_host\" at graph 0.5,0.01 center front nopoint; \
+                set label \"$label_ping_min\" at graph 0.25,1 center front nopoint; \
+                set label \"$label_ping_max\" at graph 0.37,1 center front nopoint; \
+                set label \"$label_ping_avg\" at graph 0.49,1 center front nopoint; \
+                set label \"$label_ping_current\" at graph 0.61,1 center front nopoint; \
+                set label \"$label_jitter\" at graph 0.73,1 center front nopoint; \
                 set datafile separator \"\n\"; \
                 set datafile commentschars \"#\"; \
-                plot \"$file_avg_ping_time\" with linespoints pointtype \"$point_type_average\" linecolor \"$plot_average_color\", \
-                     \"$file_ping_time\" with points pointtype \"$point_type_samples\" linecolor \"$plot_sample_color\""
+                plot \"$file_avg_ping_time\" with linespoints pointtype \"$point_type_average\", \
+                     \"$file_ping_time\" with points pointtype \"$point_type_samples\""
     sleep "$update_interval"s
 done
