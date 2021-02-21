@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# console-ping-plot.sh UNLICENSE
+# console-ping-plot-nocolor.sh UNLICENSE
 # Toazd <wmcdannell@hotmail.com> Feb 2021
 #
 # Purpose:
@@ -36,6 +36,8 @@ jitter_count=0
 jitter_delta_count=0
 jitter_abs_delta=0
 jitter_abs_delta_sum=0
+console_height=""
+console_width=""
 data_line=""
 data_lines_count=0
 flag_missing=0
@@ -299,11 +301,11 @@ EOC
     }
 
     # max history reached, clear data files and start over
-    if [ "$data_lines_count" -gt "$plot_history_max" ]; then
+    [ "$data_lines_count" -gt "$plot_history_max" ] && {
         printf "" > "$file_ping_time"
         printf "" > "$file_avg_ping_time"
         continue
-    fi
+    }
 
     # If the current ping time is greater than the current ping time max it becomes the latest maximum
     [ "$(printf '%s\n' "$latest_ping_time > $ping_time_max" | bc)" -eq 1 ] && ping_time_max=$latest_ping_time
@@ -312,13 +314,11 @@ EOC
     [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
     # Get the current screen character width and height for gnuplot
-    console_dimensions=$(stty size)
-    console_height=${console_dimensions% *}
-    console_width=${console_dimensions#* }
-    #if [ "$console_height" -lt 25 ] || [ "$console_width" -lt 25 ]; then
-    #    printf '%s\n' "Aborting (screen area too small)"
-    #    exit 1
-    #fi
+    if [ -z "$console_height" ] || [ -z "$console_width" ]; then
+        console_dimensions=$(stty size)
+        console_height=${console_dimensions% *}
+        console_width=${console_dimensions#* }
+    fi
 
     # Make the labels
     label_host=" $target_host "

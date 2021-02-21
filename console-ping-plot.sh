@@ -75,6 +75,8 @@ jitter_count=0
 jitter_delta_count=0
 jitter_abs_delta=0
 jitter_abs_delta_sum=0
+console_height=""
+console_width=""
 data_line=""
 data_lines_count=0
 flag_missing=0
@@ -364,17 +366,14 @@ EOC
         [ "$jitter_delta_count" -ge 1 ] && {
             jitter_current=$(printf '%s\n' "scale=4; $jitter_abs_delta_sum / $jitter_delta_count" | bc -l)
         }
-
-        # DEBUG
-        #[ "$jitter_delta_count" -ge 1 ] && printf '%s\n' "$jitter_current" >> jitter.out
     }
 
     # max history reached, clear data files and start over
-    if [ "$data_lines_count" -gt "$plot_history_max" ]; then
+    [ "$data_lines_count" -gt "$plot_history_max" ] && {
         printf "" > "$file_ping_time"
         printf "" > "$file_avg_ping_time"
         continue
-    fi
+    }
 
     # If the current ping time is greater than the current ping time max it becomes the latest maximum
     [ "$(printf '%s\n' "$latest_ping_time > $ping_time_max" | bc)" -eq 1 ] && ping_time_max=$latest_ping_time
@@ -382,20 +381,11 @@ EOC
     # If the current ping time is less than the current ping min it becomes the latest minimum
     [ "$(printf '%s\n' "$latest_ping_time < $ping_time_min" | bc)" -eq 1 ] && ping_time_min=$latest_ping_time
 
-    # Adjust the yrange using the max and min, centered around the avg
-    #if [ "$(printf '%s\n' "$ping_time_average > 0" | bc)" -eq 1  ]; then
-    #    plot_y_max=$(printf '%s\n' "scale=4; ($ping_time_max + ($ping_time_average / 10))" | bc -l)
-    #    plot_y_min=$(printf '%s\n' "scale=4; ($ping_time_min - ($ping_time_average / 10))" | bc -l)
-    #fi
-
     # Get the current screen character width and height for gnuplot
-    # TODO: what if we have to guess (stty not available/fails)
-    console_dimensions=$(stty size)
-    console_height=${console_dimensions% *}
-    console_width=${console_dimensions#* }
-    if [ "$console_height" -lt 25 ] || [ "$console_width" -lt 25 ]; then
-        printf '%s\n' "Aborting (screen area too small)"
-        exit 1
+    if [ -z "$console_height" ] || [ -z "$console_width" ]; then
+        console_dimensions=$(stty size)
+        console_height=${console_dimensions% *}
+        console_width=${console_dimensions#* }
     fi
 
     # Color the ping stats labels text based on quality thresholds set above
@@ -444,35 +434,21 @@ EOC
     label_jitter=" Jitter: $(printf '%1.3g' "$jitter_current") "
     label_samples="${data_lines_count}/${plot_history_max} samples, ${update_interval}s interval"
 
-    # avoid errors with gnuplot when there is no y-axis coordinate to plot
-    # TODO test if this is even needed anymore
-    #[ "$(printf '%s\n' "$plot_y_min >= $plot_y_max" | bc)" -eq 1 ] && continue
-
-    # DEBUG labels
-    #set label \"DEBUG - DeltaSum: $jitter_abs_delta_sum JitDeltaCnt: $jitter_delta_count JitCnt: $jitter_count SmpA: $jitter_sample_a SmpB: $jitter_sample_b AbsDelta: $jitter_abs_delta\" at graph 0.5,0.05 center front nopoint textcolor \"red\"; \
-    # set label \"($plot_y_min $plot_y_max)\" at graph 0.5,0.3 center front nopoint textcolor \"red\"; \
-    #set yrange [$plot_y_min:$plot_y_max]; \
     gnuplot -e "set term dumb $terminal_type size $console_width, $console_height; \
                 set encoding utf8; set key off; set autoscale x; set autoscale y; \
                 set x2label; set y2label; \
-
                 set xlabel \"$label_samples\" norotate offset character 0,0 textcolor \"$label_xlabel_samples_color\"; \
                 set ylabel \"Time\n(ms)\" norotate offset character 4,2 textcolor \"$label_ylabel_time_color\"; \
-
                 set bmargin 3; set tmargin 3; set rmargin 1; \
                 set border front linestyle 1 linecolor \"${border_color}\"; \
-
                 set xtics mirror border in autojustify scale default textcolor \"$xtics_color\"; \
                 set ytics mirror border in autojustify scale default textcolor \"$ytics_color\"; \
-
                 set label \"$label_host\" at graph 0.5,0.01 center front nopoint textcolor \"$label_host_color\"; \
-
                 set label \"$label_ping_min\" at graph 0.25,1 center front nopoint textcolor \"$label_ping_min_color\"; \
                 set label \"$label_ping_max\" at graph 0.37,1 center front nopoint textcolor \"$label_ping_max_color\"; \
                 set label \"$label_ping_avg\" at graph 0.49,1 center front nopoint textcolor \"$label_ping_avg_color\"; \
                 set label \"$label_ping_current\" at graph 0.61,1 center front nopoint textcolor \"$label_ping_current_color\"; \
                 set label \"$label_jitter\" at graph 0.73,1 center front nopoint textcolor \"$label_jitter_color\"; \
-
                 set datafile separator \"\n\"; \
                 set datafile commentschars \"#\"; \
                 plot \"$file_avg_ping_time\" with linespoints pointtype \"$point_type_average\" linecolor \"$plot_average_color\", \
