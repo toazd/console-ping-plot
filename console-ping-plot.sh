@@ -249,7 +249,7 @@ do
         ;;
     esac
 done <<EOC
-$(command -V gnuplot ping bc mktemp 2>&1)
+$(command -V gnuplot ping bc shuf mktemp 2>&1)
 EOC
 [ "$flag_missing" -eq 1 ] && exit 1
 
